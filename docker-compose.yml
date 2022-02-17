@@ -1,0 +1,57 @@
+version: '2'
+services:
+  db:
+    env_file:
+      - .env
+    image: mariadb
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQLPASSWORD}
+    volumes:
+      - './data/:/var/lib/mysql'
+    ports:
+      - 3306:3306
+    networks:
+      vpcbr:
+        ipv4_address: ${MYSQLHOSTNAME}
+  web:
+    env_file:
+      - .env
+    restart: always
+    build:
+      context: ./php
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    volumes:
+      - ./.env:/var/www/html/.env
+      - ./web:/var/www/html/
+    ports:
+      - 80:80
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.8
+  phpmyadmin:
+    env_file:
+      - .env
+    image: phpmyadmin
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - 8080:80
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOSTS=${MYSQLHOSTNAME}
+      - PMA_USER=${MYSQLUSERNAME}
+      - PMA_PASSWORD=${MYSQLPASSWORD}
+    networks:
+      vpcbr:
+        ipv4_address: 10.5.0.9
+networks:
+  vpcbr:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 10.5.0.0/16
+         gateway: 10.5.0.1
